@@ -5,7 +5,7 @@ import os
 import json
 import sys
 
-def get_access_token_async(subscription_key, account_id, location):
+def get_access_token(subscription_key, account_id, location):
     url = f"https://api.videoindexer.ai/Auth/trial/Accounts/{account_id}/AccessToken?allowEdit=true"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key
@@ -15,7 +15,7 @@ def get_access_token_async(subscription_key, account_id, location):
     response.raise_for_status()
     return response.json()
 
-def upload_local_file_async(access_token, account_id, location, video_path) -> str:
+def upload_local_file(access_token, account_id, location, video_path) -> str:
 
     video_name = os.path.basename(video_path)
     url = f"https://api.videoindexer.ai/{location}/Accounts/{account_id}/Videos"
@@ -36,7 +36,7 @@ def upload_local_file_async(access_token, account_id, location, video_path) -> s
     video_id = response.json().get('id')
     return video_id
 
-def wait_for_index_async(access_token, account_id, location, video_id:str, language:str='English'):
+def wait_for_index(access_token, account_id, location, video_id:str, language:str='English'):
     
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
         f'Videos/{video_id}/Index'
@@ -73,7 +73,7 @@ def wait_for_index_async(access_token, account_id, location, video_id:str, langu
         print(f'Processing : {video_progress}')
         time.sleep(30) # wait 30 seconds before checking again
 
-def get_insights_async(access_token, account_id, location, video_id:str, language:str='English'):
+def get_insights(access_token, account_id, location, video_id:str, language:str='English'):
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
         f'Videos/{video_id}/Index'
     included_insights = "transcript,visualContentModeration"
@@ -94,7 +94,7 @@ def get_insights_async(access_token, account_id, location, video_id:str, languag
     with open(f'{video_id}.json', 'w', encoding='utf-8') as f:
         json.dump(video_result, f, ensure_ascii=False, indent=4)
 
-def get_textual_artifact_async(access_token, account_id, location, video_id:str, language:str='English') -> json:
+def get_textual_artifact(access_token, account_id, location, video_id:str, language:str='English') -> json:
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
         f'Videos/{video_id}/ArtifactUrl?type=TextualContentModeration'
 

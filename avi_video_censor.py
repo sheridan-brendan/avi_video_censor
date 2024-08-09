@@ -26,12 +26,12 @@ except ValueError:
     raise
 
 
-access_token = get_access_token_async(subscription_key, account_id, location)
-#video_id = upload_local_file_async(access_token, account_id, location, video_path)
+access_token = get_access_token(subscription_key, account_id, location)
+#video_id = upload_local_file(access_token, account_id, location, video_path)
 video_id = "21ec4df54e"
-wait_for_index_async(access_token, account_id, location, video_id)
-get_insights_async(access_token, account_id, location, video_id)
-textual = get_textual_artifact_async(access_token, account_id, location, video_id)
+wait_for_index(access_token, account_id, location, video_id)
+get_insights(access_token, account_id, location, video_id)
+textual = get_textual_artifact(access_token, account_id, location, video_id)
 
 ffmpeg_call = f"ffmpeg -i {video_path} -vcodec copy -af \"volume=enable='"
 
