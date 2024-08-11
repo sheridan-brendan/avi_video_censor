@@ -114,3 +114,23 @@ def get_textual_artifact(access_token, account_id, location, video_id:str, langu
     
     return artifact_response.json()
 
+def get_visual_artifact(access_token, account_id, location, video_id:str, language:str='English') -> json:
+    url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
+        f'Videos/{video_id}/ArtifactUrl?type=VisualContentModeration'
+
+    params = {
+        'accessToken': access_token,
+    }
+
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+
+    artifact_url = response.json()
+    artifact_response = requests.get(artifact_url, params=params)
+    artifact_response.raise_for_status()
+    print(f'Writing visual content moderation json to {video_id}_visual.json')
+    with open(f'{video_id}_visual.json', 'w', encoding='utf-8') as f:
+        json.dump(artifact_response.json(), f, ensure_ascii=False, indent=4)
+    
+    return artifact_response.json()
+
