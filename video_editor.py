@@ -65,7 +65,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     textual = get_textual_artifact(access_token, account_id, location, video_id) 
 
     ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} "
-    ffmpeg_call += f"-filter_complex\""
+    ffmpeg_call += f"-filter_complex \""
     ffmpeg_call += f"[0:v]crop={chatx}:{chaty}"
     ffmpeg_call += f":{chatoffx}:{chatoffy},avgblur={blur}:enable="
     
