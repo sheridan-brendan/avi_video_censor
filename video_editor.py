@@ -55,6 +55,8 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     buffer = binwidth/2*fps
     bad_bins = binned[binned['Score'] > agg_threshold]
     print(bad_bins)
+    if(len(bad_bins) == 0):
+        return vide_name
     censored_path = f"{video_name}-censored.{video_ext}"
     video_path = f"{video_name}.{video_ext}" 
     ffmpeg_call = f"ffmpeg -i {video_path} -i {image} "
@@ -66,8 +68,8 @@ def censor_video(access_token, account_id, location, video_id, video_name,
         ffmpeg_call += f"between(n,{index.left-buffer},{index.right+buffer})"
 
     ffmpeg_call += f"'\" -pix_fmt yuv420p -c:a copy {censored_path}"
-    #print(ffmpeg_call)
-    subprocess.run(shlex.split(ffmpeg_call))
+    print(ffmpeg_call)
+    #subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-censored"
 
     
