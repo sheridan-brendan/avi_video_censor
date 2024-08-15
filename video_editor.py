@@ -19,7 +19,6 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     bleeped_path = f"{video_name}-bleeped.{video_ext}"
     for word in textual['TextualContentModeration']:
         for instance in word['Instances']:
-            #TODO: consider blurring chat for type = ocr
             if instance['Type'] == "Transcript":
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
@@ -31,8 +30,12 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
 
+#TODO: split this up better
 def censor_video(access_token, account_id, location, video_id, video_name,
-                 video_ext, image, binwidth = 5.0, threshold = .5) -> str :
+                 video_ext, image, binwidth = 5.0, threshold = .5, chatx
+                 = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20) -> str :
+    
+
     visual = get_visual_artifact(access_token, account_id, location, video_id)
     fps = visual['Fps']
     df = pd.json_normalize(visual['Results'])
@@ -59,17 +62,38 @@ def censor_video(access_token, account_id, location, video_id, video_name,
         return vide_name
     censored_path = f"{video_name}-censored.{video_ext}"
     video_path = f"{video_name}.{video_ext}" 
-    ffmpeg_call = f"ffmpeg -i {video_path} -i {image} "
-    ffmpeg_call += f"-filter_complex \"[0:v][1:v] overlay=0:0:enable='"
+    textual = get_textual_artifact(access_token, account_id, location, video_id) 
+
+    ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} "
+    ffmpeg_call += f"-filter_complex\""
+    ffmpeg_call += f"[0:v]crop={chatx}:{chaty}"
+    ffmpeg_call += f":{chatoffx}:{chatoffy},avgblur={blur}:enable="
+    
+    between = "'"
+    for word in textual['TextualContentModeration']:
+        for instance in word['Instances']:
+            if instance['Type'] == "Ocr":
+                start = timestamp_to_seconds(instance['Start'])
+                end = timestamp_to_seconds(instance['End'])
+                if between[-1] == ')':
+                    between += "+"
+                between += f"between(t,{start},{end})"
+    between += "'"
+    ffmpeg_call += between
+
+    ffmpeg_call += f"[fg];[0:v][fg]overlay={chatoffx}:{chatoffy}:enable="
+    ffmpeg_call += between
+    ffmpeg_call += f"[out];[out][1:v] overlay=0:0:enable='"
+
     for index, row in bad_bins.iterrows():
         #print(f"{index.left-buffer},{index.right+buffer}")
         if ffmpeg_call[-1] == ')':
             ffmpeg_call += "+"
         ffmpeg_call += f"between(n,{index.left-buffer},{index.right+buffer})"
 
-    ffmpeg_call += f"'\" -pix_fmt yuv420p -c:a copy {censored_path}"
+    ffmpeg_call += f"'\" -map 0:a -c:a copy {censored_path}"
     print(ffmpeg_call)
-    #subprocess.run(shlex.split(ffmpeg_call))
+    subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-censored"
 
     
