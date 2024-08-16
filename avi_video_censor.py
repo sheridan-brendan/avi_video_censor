@@ -23,7 +23,7 @@ except ValueError:
 access_token = get_access_token(subscription_key, account_id, location)
 #video_id = upload_local_file(access_token, account_id, location, video_path)
 video_id = "21ec4df54e"
-wait_for_index(access_token, account_id, location, video_id)
+access_token = wait_for_index(subscription_key, account_id, location, video_id)
 #insights = get_insights(access_token, account_id, location, video_id)
 #bleeped_name = bleep_audio(access_token, account_id, location, video_id, video_name, video_ext)
 bleeped_name = video_name

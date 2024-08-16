@@ -30,13 +30,7 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
 
-#TODO: split this up better
-def censor_video(access_token, account_id, location, video_id, video_name,
-                 video_ext, image, binwidth = 5.0, threshold = .5, chatx
-                 = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20) -> str :
-    
-
-    visual = get_visual_artifact(access_token, account_id, location, video_id)
+def bin_avi_artifact(visual, binwidth, threshold) -> list:
     fps = visual['Fps']
     df = pd.json_normalize(visual['Results'])
     #df.drop(['isAdultContent','isRacyContent','isGoryContent'], axis=1)
@@ -52,14 +46,22 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     #print(num_bins)
     df['bins'] = pd.cut(df['FrameIndex'], bins=num_bins)
     binned = df.groupby('bins').sum()
-    print(binned)
+    #print(binned)
 
     agg_threshold = threshold*binwidth
     buffer = binwidth/2*fps
     bad_bins = binned[binned['Score'] > agg_threshold]
+    return [bad_bins,buffer]
+
+
+def censor_video(access_token, account_id, location, video_id, video_name,
+                 video_ext, image, binwidth = 5.0, threshold = .4, chatx
+                 = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20) -> str :
+    
+    visual = get_visual_artifact(access_token, account_id, location, video_id)
+    bad_bins,buffer = bin_avi_artifact(visual, binwidth, threshold)
+    pd.set_option('display.max_rows', None)
     print(bad_bins)
-    if(len(bad_bins) == 0):
-        return vide_name
     censored_path = f"{video_name}-censored.{video_ext}"
     video_path = f"{video_name}.{video_ext}" 
     textual = get_textual_artifact(access_token, account_id, location, video_id) 
@@ -80,6 +82,10 @@ def censor_video(access_token, account_id, location, video_id, video_name,
                 between += f"between(t,{start},{end})"
     between += "'"
     ffmpeg_call += between
+    
+    if(len(bad_bins) == 0 and between == "''"):
+        print("No video censoring necessary.")
+        return vide_name
 
     ffmpeg_call += f"[fg];[0:v][fg]overlay={chatoffx}:{chatoffy}:enable="
     ffmpeg_call += between

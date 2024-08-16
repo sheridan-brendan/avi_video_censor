@@ -36,14 +36,14 @@ def upload_local_file(access_token, account_id, location, video_path) -> str:
     video_id = response.json().get('id')
     return video_id
 
-def wait_for_index(access_token, account_id, location, video_id:str, language:str='English'):
+def wait_for_index(subscription_key, account_id, location, video_id:str, language:str='English'):
     
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
         f'Videos/{video_id}/Index'
     included_insights = "blocks" #empty queries all insights
 
     params = {
-        'accessToken': access_token,
+        'accessToken': "",
         'language': language,
         'includedInsights': included_insights,
         'includeSummarizedInsights': False
@@ -51,8 +51,8 @@ def wait_for_index(access_token, account_id, location, video_id:str, language:st
 
     print(f'Checking if video {video_id} has finished indexing...')
     processing = True
-    #TODO: token may time out here for large files
     while processing:
+        params['accessToken'] = get_access_token(subscription_key, account_id, location)
         response = requests.get(url, params=params)
 
         response.raise_for_status()
@@ -71,8 +71,9 @@ def wait_for_index(access_token, account_id, location, video_id:str, language:st
             break
 
         print(f'Processing : {video_progress}')
-        time.sleep(30) # wait 30 seconds before checking again
+        time.sleep(60) # wait 30 seconds before checking again
 
+    return params['accessToken']
 def get_insights(access_token, account_id, location, video_id:str, language:str='English'):
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
         f'Videos/{video_id}/Index'
