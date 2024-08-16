@@ -25,6 +25,11 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
                 if ffmpeg_call[-1] == ')':
                     ffmpeg_call += "+"
                 ffmpeg_call += f"between(t,{start},{end})"
+    
+    if ffmpeg_call[-1] != ')':
+        print("No bleeping necessary")
+        return video_name
+
     ffmpeg_call += f"':volume=0\" {bleeped_path}"
     #print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
@@ -85,7 +90,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     
     if(len(bad_bins) == 0 and between == "''"):
         print("No video censoring necessary.")
-        return vide_name
+        return video_name
 
     ffmpeg_call += f"[fg];[0:v][fg]overlay={chatoffx}:{chatoffy}:enable="
     ffmpeg_call += between

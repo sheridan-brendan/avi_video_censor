@@ -21,11 +21,13 @@ except ValueError:
 
 
 access_token = get_access_token(subscription_key, account_id, location)
-#video_id = upload_local_file(access_token, account_id, location, video_path)
-video_id = "21ec4df54e"
+video_id = upload_local_file(access_token, account_id, location, video_path)
+#video_id = "07vwapsjoy"
 access_token = wait_for_index(subscription_key, account_id, location, video_id)
 #insights = get_insights(access_token, account_id, location, video_id)
-#bleeped_name = bleep_audio(access_token, account_id, location, video_id, video_name, video_ext)
-bleeped_name = video_name
+bleeped_name = bleep_audio(access_token, account_id, location, video_id, video_name, video_ext)
+#bleeped_name = video_name
 censored_name = censor_video(access_token, account_id, location, video_id,
                              bleeped_name, video_ext, image_path)
+
+print(f"Outputting censored video: {censored_name}.{video_ext}")
