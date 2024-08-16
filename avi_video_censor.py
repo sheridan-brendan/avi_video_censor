@@ -19,10 +19,15 @@ except ValueError:
     print("Usage: avi_video_censor <video_file.ext> <censor_image>")
     raise
 
+#TODO: considering splitting up file automatically
+if os.path.getsize(video_path) > 2e9:
+    sys.exit("Error: maximum local upload size 2GB")
+
+
 
 access_token = get_access_token(subscription_key, account_id, location)
-video_id = upload_local_file(access_token, account_id, location, video_path)
-#video_id = "07vwapsjoy"
+#video_id = upload_local_file(access_token, account_id, location, video_path)
+video_id = "07vwapsjoy"
 access_token = wait_for_index(subscription_key, account_id, location, video_id)
 #insights = get_insights(access_token, account_id, location, video_id)
 bleeped_name = bleep_audio(access_token, account_id, location, video_id, video_name, video_ext)
