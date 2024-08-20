@@ -4,6 +4,7 @@ import requests
 import os
 import json
 import sys
+import time
 
 def get_access_token(subscription_key, account_id, location):
     url = f"https://api.videoindexer.ai/Auth/trial/Accounts/{account_id}/AccessToken?allowEdit=true"
@@ -24,16 +25,19 @@ def upload_local_file(access_token, account_id, location, video_path) -> str:
     params = {
             'accessToken': access_token,
             'name': video_name,
-            'privacy': privacy#,
+            'privacy': privacy
     }
 
     with open(video_path, 'rb') as video_file:
         files = {'file': video_file}
         response = requests.post(url, params=params, files=files)
 
+    #TODO: investigate 409 Client Error response here
+    #   possibly related to uploading same video multiple times
     response.raise_for_status()
 
     video_id = response.json().get('id')
+    print(f"finished uploading, id = {video_id}")
     return video_id
 
 def wait_for_index(subscription_key, account_id, location, video_id:str, language:str='English'):
@@ -71,13 +75,13 @@ def wait_for_index(subscription_key, account_id, location, video_id:str, languag
             break
 
         print(f'Processing : {video_progress}')
-        time.sleep(60) # wait 30 seconds before checking again
+        time.sleep(60) # wait 60 seconds before checking again
 
     return params['accessToken']
-def get_insights(access_token, account_id, location, video_id:str, language:str='English'):
+def get_insights(access_token, account_id, location, video_id:str, language:str='English') -> json:
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \
         f'Videos/{video_id}/Index'
-    included_insights = "transcript,visualContentModeration"
+    included_insights = "transcript,visualContentModeration,ocr"
 
     params = {
         'accessToken': access_token,
@@ -94,6 +98,8 @@ def get_insights(access_token, account_id, location, video_id:str, language:str=
     print(f'Writing json to {video_id}.json')
     with open(f'{video_id}.json', 'w', encoding='utf-8') as f:
         json.dump(video_result, f, ensure_ascii=False, indent=4)
+    
+    return video_result
 
 def get_textual_artifact(access_token, account_id, location, video_id:str, language:str='English') -> json:
     url = f'https://api.videoindexer.ai/{location}/Accounts/{account_id}/' + \

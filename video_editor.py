@@ -58,19 +58,35 @@ def bin_avi_artifact(visual, binwidth, threshold) -> list:
     bad_bins = binned[binned['Score'] > agg_threshold]
     return [bad_bins,buffer]
 
+def find_breaks(insights) -> list:
+    breaks = []
+    for ocr in insights['videos'][0]['insights']['ocr'] :
+        if(ocr['text'] == "TAKING SHORT BREAK, STAY TUNED!") :
+            for instance in ocr['instances'] :
+                #print (f"start:{instance['start']}, end:{instance['end']}")
+                breaks.append((instance['start'], instance['end']))
+    return breaks
+
 
 def censor_video(access_token, account_id, location, video_id, video_name,
                  video_ext, image, binwidth = 5.0, threshold = .4, chatx
                  = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20) -> str :
-    
+   
+    censored_path = f"{video_name}-censored.{video_ext}"
+    video_path = f"{video_name}.{video_ext}" 
+
+    #TODO: think of ways to make chat blur less brittle
     visual = get_visual_artifact(access_token, account_id, location, video_id)
     bad_bins,buffer = bin_avi_artifact(visual, binwidth, threshold)
     pd.set_option('display.max_rows', None)
     print(bad_bins)
-    censored_path = f"{video_name}-censored.{video_ext}"
-    video_path = f"{video_name}.{video_ext}" 
-    textual = get_textual_artifact(access_token, account_id, location, video_id) 
 
+    insights = get_insights(access_token, account_id, location, video_id)
+    breaks = find_breaks(insights)
+    print(breaks)
+
+
+    textual = get_textual_artifact(access_token, account_id, location, video_id) 
     ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} "
     ffmpeg_call += f"-filter_complex \""
     ffmpeg_call += f"[0:v]crop={chatx}:{chaty}"
@@ -86,26 +102,32 @@ def censor_video(access_token, account_id, location, video_id, video_name,
                     between += "+"
                 between += f"between(t,{start},{end})"
     between += "'"
-    ffmpeg_call += between
     
+    #TODO: this needs testing for xor case
     if(len(bad_bins) == 0 and between == "''"):
         print("No video censoring necessary.")
         return video_name
+    if(between == "''"):
+        between = "'between(t,0,0)'"
 
+    ffmpeg_call += between
     ffmpeg_call += f"[fg];[0:v][fg]overlay={chatoffx}:{chatoffy}:enable="
     ffmpeg_call += between
-    ffmpeg_call += f"[out];[out][1:v] overlay=0:0:enable='"
+    ffmpeg_call += f"[out];[out][1:v] overlay=0:0:enable="
 
+    between = "'"
     for index, row in bad_bins.iterrows():
         #print(f"{index.left-buffer},{index.right+buffer}")
-        if ffmpeg_call[-1] == ')':
-            ffmpeg_call += "+"
-        ffmpeg_call += f"between(n,{index.left-buffer},{index.right+buffer})"
+        if between[-1] == ')':
+            between += "+"
+        between += f"between(n,{index.left-buffer},{index.right+buffer})"
+    between += "'"
+    if(between == "''"):
+        between = "'between(t,0,0)'"
 
-    ffmpeg_call += f"'\" -map 0:a -c:a copy {censored_path}"
+    ffmpeg_call += between
+    ffmpeg_call += f"\" -map 0:a -c:a copy {censored_path}"
     print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-censored"
-
-    
 
