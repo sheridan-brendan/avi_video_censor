@@ -35,6 +35,36 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
 
+def find_bad_chat(textual) -> list:
+    bad_chat = []
+    for word in textual['TextualContentModeration']:
+        for instance in word['Instances']:
+            if instance['Type'] == "Ocr":
+                start = timestamp_to_seconds(instance['Start'])
+                end = timestamp_to_seconds(instance['End'])
+                bad_chat.append((start,end))
+    return bad_chat
+
+def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
+    if(not bad_chat):
+        return "null[chatout];"
+
+    ffmpeg_filter = f"[0:v]crop={chatx}:{chaty}"
+    ffmpeg_filter += f":{chatoffx}:{chatoffy},avgblur={blur}:enable="
+    
+    between = "'"
+    for chat in bad_chat :            
+        if between[-1] == ')':
+            between += "+"
+        between += f"between(t,{chat[0]},{chat[1]})"
+    between += "'"
+    
+    ffmpeg_filter += between
+    ffmpeg_filter += f"[fg];[0:v][fg]overlay={chatoffx}:{chatoffy}:enable="
+    ffmpeg_filter += between
+    ffmpeg_filter += f"[chatout];"
+    return ffmpeg_filter
+
 def bin_avi_artifact(visual, binwidth, threshold) -> list:
     fps = visual['Fps']
     df = pd.json_normalize(visual['Results'])
@@ -58,14 +88,58 @@ def bin_avi_artifact(visual, binwidth, threshold) -> list:
     bad_bins = binned[binned['Score'] > agg_threshold]
     return [bad_bins,buffer]
 
-def find_breaks(insights) -> list:
+def make_visual_filter(bad_bins, buffer) -> str:
+    if(bad_bins.empty):
+        return "[chatout]null[visout];"
+
+    ffmpeg_filter = "[chatout][1:v] overlay=0:0:enable="
+
+    between = "'"
+    for index, row in bad_bins.iterrows():
+        #print(f"{index.left-buffer},{index.right+buffer}")
+        if between[-1] == ')':
+            between += "+"
+        between += f"between(n,{index.left-buffer},{index.right+buffer})"
+    between += "'"
+    
+    ffmpeg_filter += between
+    ffmpeg_filter += "[visout];"
+    return ffmpeg_filter
+
+
+def find_breaks(insights, break_phrase = "TAKING SHORT BREAK, STAY TUNED!") -> list:
     breaks = []
     for ocr in insights['videos'][0]['insights']['ocr'] :
-        if(ocr['text'] == "TAKING SHORT BREAK, STAY TUNED!") :
+        if(ocr['text'] == break_phrase) :
             for instance in ocr['instances'] :
                 #print (f"start:{instance['start']}, end:{instance['end']}")
-                breaks.append((instance['start'], instance['end']))
+                breaks.append((timestamp_to_seconds(instance['start']), 
+                               timestamp_to_seconds(instance['end'])))
     return breaks
+
+def make_break_filter(breaks) -> str:
+    #print(breaks)
+    if (not breaks):
+        return "[visout]null[outv];[0:a]anull[outa]"
+    ffmpeg_filter  = f"[visout]split={len(breaks)+1}"
+    for i in range(len(breaks)+1):
+        ffmpeg_filter += f"[v{i}]"
+    ffmpeg_filter += ";"
+    start = 0
+    for i in range(len(breaks)):
+        ffmpeg_filter += f"[v{i}]trim=start={start}:end={breaks[0][0]}"
+        ffmpeg_filter += f",setpts=PTS-STARTPTS[tv{i}];"
+        ffmpeg_filter += f"[0:a]atrim=start={start}:end={breaks[0][0]}"
+        ffmpeg_filter += f",asetpts=PTS-STARTPTS[ta{i}];"
+        start = breaks[0][1]
+    ffmpeg_filter += f"[v{len(breaks)}]trim=start={start}"
+    ffmpeg_filter += f",setpts=PTS-STARTPTS[tv{len(breaks)}];"
+    ffmpeg_filter += f"[0:a]atrim=start={start}"
+    ffmpeg_filter += f",asetpts=PTS-STARTPTS[ta{len(breaks)}];"
+    for i in range(len(breaks)+1):
+        ffmpeg_filter += f"[tv{i}][ta{i}]"
+    ffmpeg_filter += "concat=a=1[outv][outa]"
+    return ffmpeg_filter
 
 
 def censor_video(access_token, account_id, location, video_id, video_name,
@@ -78,55 +152,30 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     #TODO: think of ways to make chat blur less brittle
     visual = get_visual_artifact(access_token, account_id, location, video_id)
     bad_bins,buffer = bin_avi_artifact(visual, binwidth, threshold)
-    pd.set_option('display.max_rows', None)
-    print(bad_bins)
+    #pd.set_option('display.max_rows', None)
+    #print(bad_bins)
+
+    textual = get_textual_artifact(access_token, account_id, location, video_id) 
+    bad_chat = find_bad_chat(textual)
 
     insights = get_insights(access_token, account_id, location, video_id)
     breaks = find_breaks(insights)
-    print(breaks)
+    #breaks = []
 
-
-    textual = get_textual_artifact(access_token, account_id, location, video_id) 
-    ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} "
-    ffmpeg_call += f"-filter_complex \""
-    ffmpeg_call += f"[0:v]crop={chatx}:{chaty}"
-    ffmpeg_call += f":{chatoffx}:{chatoffy},avgblur={blur}:enable="
-    
-    between = "'"
-    for word in textual['TextualContentModeration']:
-        for instance in word['Instances']:
-            if instance['Type'] == "Ocr":
-                start = timestamp_to_seconds(instance['Start'])
-                end = timestamp_to_seconds(instance['End'])
-                if between[-1] == ')':
-                    between += "+"
-                between += f"between(t,{start},{end})"
-    between += "'"
-    
-    #TODO: this needs testing for xor case
-    if(len(bad_bins) == 0 and between == "''"):
-        print("No video censoring necessary.")
+    if(bad_bins.empty and not bad_chat and not breaks):
+        print("Nothing to do. Skipping reencode.")
         return video_name
-    if(between == "''"):
-        between = "'between(t,0,0)'"
 
-    ffmpeg_call += between
-    ffmpeg_call += f"[fg];[0:v][fg]overlay={chatoffx}:{chatoffy}:enable="
-    ffmpeg_call += between
-    ffmpeg_call += f"[out];[out][1:v] overlay=0:0:enable="
+    #TODO: consider -crf (18? def=23) option for quality tuning
+    ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} -map_chapters -1 "
+    ffmpeg_call += f"-filter_complex \""
+    
+    ffmpeg_call += make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy,
+                                    blur)
+    ffmpeg_call += make_visual_filter(bad_bins,buffer)
+    ffmpeg_call += make_break_filter(breaks)
 
-    between = "'"
-    for index, row in bad_bins.iterrows():
-        #print(f"{index.left-buffer},{index.right+buffer}")
-        if between[-1] == ')':
-            between += "+"
-        between += f"between(n,{index.left-buffer},{index.right+buffer})"
-    between += "'"
-    if(between == "''"):
-        between = "'between(t,0,0)'"
-
-    ffmpeg_call += between
-    ffmpeg_call += f"\" -map 0:a -c:a copy {censored_path}"
+    ffmpeg_call += f"\" -map [outv] -map [outa] {censored_path}"
     print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-censored"
