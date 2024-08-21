@@ -138,7 +138,7 @@ def make_break_filter(breaks) -> str:
     ffmpeg_filter += f",asetpts=PTS-STARTPTS[ta{len(breaks)}];"
     for i in range(len(breaks)+1):
         ffmpeg_filter += f"[tv{i}][ta{i}]"
-    ffmpeg_filter += "concat=a=1[outv][outa]"
+    ffmpeg_filter += f"concat=n={len(breaks)+1}:a=1[outv][outa]"
     return ffmpeg_filter
 
 
