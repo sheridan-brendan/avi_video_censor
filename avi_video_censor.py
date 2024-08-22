@@ -32,8 +32,8 @@ video_id = "21ec4df54e" #offensive content example
 
 access_token = wait_for_index(subscription_key, account_id, location, video_id)
 #insights = get_insights(access_token, account_id, location, video_id)
-#bleeped_name = bleep_audio(access_token, account_id, location, video_id, video_name, video_ext)
-bleeped_name = video_name
+bleeped_name = bleep_audio(access_token, account_id, location, video_id, video_name, video_ext)
+#bleeped_name = video_name
 censored_name = censor_video(access_token, account_id, location, video_id,
                              bleeped_name, video_ext, image_path)
 
