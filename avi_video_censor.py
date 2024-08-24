@@ -52,12 +52,12 @@ if video_size > 2e9:
             files.append(row[0])
 
 else :
-    files.append(video_name)
+    files.append(video_path)
 
 print(files[:])
 
 for i, path in enumerate(files):
-    video,ext = video_path.rsplit('.',1)
+    video,ext = path.rsplit('.',1)
     access_token = get_access_token(subscription_key, account_id, location)
     video_id = upload_local_file(access_token, account_id, location, path)
     #video_id = "07vwapsjoy" #no offensive content example
@@ -79,7 +79,7 @@ for i, path in enumerate(files):
 
 processed_file = "error"
 if(len(files) == 1):
-    processed_file = f"{files[0]}.{video_ext}"
+    processed_file = f"{files[0]}"
 else:
     processed_file = f"{video_name}-censored.{video_ext}"
     catfile = f"{video_name}.ffcat"
