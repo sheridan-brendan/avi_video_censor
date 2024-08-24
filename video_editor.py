@@ -107,7 +107,7 @@ def make_visual_filter(bad_bins, buffer) -> str:
     return ffmpeg_filter
 
 
-def find_breaks(insights, break_phrase = "TAKING SHORT BREAK, STAY TUNED!") -> list:
+def find_breaks(insights, break_phrase) -> list:
     breaks = []
     for ocr in insights['videos'][0]['insights']['ocr'] :
         if(ocr['text'] == break_phrase) :
@@ -144,7 +144,8 @@ def make_break_filter(breaks) -> str:
 
 def censor_video(access_token, account_id, location, video_id, video_name,
                  video_ext, image, binwidth = 5.0, threshold = .4, chatx
-                 = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20) -> str :
+                 = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20
+                 , break_phrase = "TAKING SHORT BREAK, STAY TUNED!") -> str :
    
     censored_path = f"{video_name}-censored.{video_ext}"
     video_path = f"{video_name}.{video_ext}" 
@@ -159,12 +160,13 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     bad_chat = find_bad_chat(textual)
 
     insights = get_insights(access_token, account_id, location, video_id)
-    breaks = find_breaks(insights)
+    breaks = find_breaks(insights, break_phrase)
     #breaks = []
 
-    if(bad_bins.empty and not bad_chat and not breaks):
-        print("Nothing to do. Skipping reencode.")
-        return video_name
+    ##TODO: may need to remove this to not break concat step for files over 2GB
+    #if(bad_bins.empty and not bad_chat and not breaks):
+    #    print("Nothing to do. Skipping reencode.")
+    #    return video_name
 
     #TODO: consider -crf (18? def=23) option for quality tuning
     ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} -map_chapters -1 "

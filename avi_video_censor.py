@@ -31,7 +31,7 @@ chatx = 1100
 chaty = 250
 chatoffx = 415
 chatoffy = 875
-
+break_phrase = "TAKING SHORT BREAK, STAY TUNED!"
 
 files = []
 video_size=os.path.getsize(video_path)
@@ -61,7 +61,8 @@ for i, video in enumerate(files):
     video_id = upload_local_file(access_token, account_id, location, path)
     #video_id = "07vwapsjoy" #no offensive content example
     #video_id = "21ec4df54e" #offensive content example
-    
+    #video_id = "b81850331b" #2nd offensive example
+
     access_token = wait_for_index(subscription_key, account_id, location, video_id)
     #insights = get_insights(access_token, account_id, location, video_id)
     bleeped_name = bleep_audio(access_token, account_id, location, video_id, 
@@ -69,7 +70,8 @@ for i, video in enumerate(files):
     #bleeped_name = video
     censored_name = censor_video(access_token, account_id, location, video_id,
                                  bleeped_name, video_ext, image_path, binwidth,
-                                 threshold, chatx, chaty, chatoffx, chatoffy, blur)
+                                 threshold, chatx, chaty, chatoffx, chatoffy,
+                                 blur, break_phrase)
     
     files[i] = censored_name
     print(f"Censored video: {censored_name}.{video_ext}")
