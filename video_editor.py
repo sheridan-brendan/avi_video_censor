@@ -132,6 +132,7 @@ def make_break_filter(breaks) -> str:
         ffmpeg_filter += f"[0:a]atrim=start={start}:end={breaks[0][0]}"
         ffmpeg_filter += f",asetpts=PTS-STARTPTS[ta{i}];"
         start = breaks[0][1]
+    #TODO: possible cause of desync bug when video ends on break?
     ffmpeg_filter += f"[v{len(breaks)}]trim=start={start}"
     ffmpeg_filter += f",setpts=PTS-STARTPTS[tv{len(breaks)}];"
     ffmpeg_filter += f"[0:a]atrim=start={start}"

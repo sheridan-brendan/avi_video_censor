@@ -13,6 +13,7 @@ subscription_key = lines[1].rstrip()
 location = lines[2].rstrip()
 account_file.close()
 
+#TODO: doesn't handle filenames with spaces
 try:
     video_path = sys.argv[1]
     video_name, video_ext = video_path.rsplit('.',1)
@@ -55,8 +56,8 @@ else :
 
 print(files[:])
 
-for i, video in enumerate(files):
-    path = f"{video}.{video_ext}"
+for i, path in enumerate(files):
+    video,ext = video_path.rsplit('.',1)
     access_token = get_access_token(subscription_key, account_id, location)
     video_id = upload_local_file(access_token, account_id, location, path)
     #video_id = "07vwapsjoy" #no offensive content example
