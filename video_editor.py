@@ -11,27 +11,45 @@ def timestamp_to_seconds(timestamp_str) -> str:
     seconds = str(int(h)*3600+int(m)*60+float(s))
     return seconds
 
-def bleep_audio(access_token, account_id, location, video_id, video_name,
-                video_ext) -> str :
+def merge_intervals(intervals):
+    intervals.sort(key=lambda x: x[0])
+    merged = []
+    for interval in intervals:
+        if not merged or merged[-1][1] < interval[0]:
+            merged.append(interval)
+        else:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], interval[1]))
+    return merged
+
+def find_audio(access_token, account_id, location, video_id) -> list :
+    bad_audio = []
     textual = get_textual_artifact(access_token, account_id, location, video_id)
-    video_path = f"{video_name}.{video_ext}"
-    ffmpeg_call = f"ffmpeg -i {video_path} -vcodec copy -af \"volume=enable='"
-    bleeped_path = f"{video_name}-bleeped.{video_ext}"
     for word in textual['TextualContentModeration']:
         for instance in word['Instances']:
             if instance['Type'] == "Transcript":
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
-                if ffmpeg_call[-1] == ')':
-                    ffmpeg_call += "+"
-                ffmpeg_call += f"between(t,{start},{end})"
+                bad_audio.append((float(start),float(end)))
+    merge_intervals(bad_audio)
+    return bad_audio
+
+def bleep_audio(access_token, account_id, location, video_id, video_name,
+                video_ext) -> str :
+    bad_audio = find_audio(access_token, account_id, location, video_id)
+    video_path = f"{video_name}.{video_ext}"
+    ffmpeg_call = f"ffmpeg -i {video_path} -vcodec copy -af \"volume=enable='"
+    bleeped_path = f"{video_name}-bleeped.{video_ext}"
+    for start,end in bad_audio :            
+        if ffmpeg_call[-1] == ')':
+            ffmpeg_call += "+"
+        ffmpeg_call += f"between(t,{start},{end})"
     
     if ffmpeg_call[-1] != ')':
         print("No bleeping necessary")
         return video_name
 
     ffmpeg_call += f"':volume=0\" {bleeped_path}"
-    #print(ffmpeg_call)
+    print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
 
@@ -43,6 +61,7 @@ def find_bad_chat(textual) -> list:
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
                 bad_chat.append((start,end))
+    merge_intervals(bad_chat)
     return bad_chat
 
 def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
@@ -68,7 +87,6 @@ def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
 def bin_avi_artifact(visual, binwidth, threshold) -> list:
     fps = visual['Fps']
     df = pd.json_normalize(visual['Results'])
-    #df.drop(['isAdultContent','isRacyContent','isGoryContent'], axis=1)
     df.drop(['Adult.isAdultContent','Adult.isRacyContent','Adult.isGoryContent'], 
             axis=1, inplace=True)
     
@@ -85,21 +103,24 @@ def bin_avi_artifact(visual, binwidth, threshold) -> list:
 
     agg_threshold = threshold*binwidth
     buffer = binwidth/2*fps
-    bad_bins = binned[binned['Score'] > agg_threshold]
-    return [bad_bins,buffer]
+    over_bins = binned[binned['Score'] > agg_threshold]
+    bad_bins = []
+    for index, row in over_bins.iterrows():
+        bad_bins.append((index.left,index.right))
+    merge_intervals(bad_bins)
+    return bad_bins
 
-def make_visual_filter(bad_bins, buffer) -> str:
-    if(bad_bins.empty):
+def make_visual_filter(bad_bins) -> str:
+    if(not bad_bins):
         return "[chatout]null[visout];"
 
     ffmpeg_filter = "[chatout][1:v] overlay=0:0:enable="
 
     between = "'"
-    for index, row in bad_bins.iterrows():
-        #print(f"{index.left-buffer},{index.right+buffer}")
+    for start,end in bad_bins:
         if between[-1] == ')':
             between += "+"
-        between += f"between(n,{index.left-buffer},{index.right+buffer})"
+        between += f"between(n,{start},{end})"
     between += "'"
     
     ffmpeg_filter += between
@@ -115,6 +136,7 @@ def find_breaks(insights, break_phrase) -> list:
                 #print (f"start:{instance['start']}, end:{instance['end']}")
                 breaks.append((timestamp_to_seconds(instance['start']), 
                                timestamp_to_seconds(instance['end'])))
+    merge_intervals(breaks)
     return breaks
 
 def make_break_filter(breaks) -> str:
@@ -153,7 +175,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
 
     #TODO: think of ways to make chat blur less brittle
     visual = get_visual_artifact(access_token, account_id, location, video_id)
-    bad_bins,buffer = bin_avi_artifact(visual, binwidth, threshold)
+    bad_bins = bin_avi_artifact(visual, binwidth, threshold)
     #pd.set_option('display.max_rows', None)
     #print(bad_bins)
 
@@ -175,7 +197,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     
     ffmpeg_call += make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy,
                                     blur)
-    ffmpeg_call += make_visual_filter(bad_bins,buffer)
+    ffmpeg_call += make_visual_filter(bad_bins)
     ffmpeg_call += make_break_filter(breaks)
 
     ffmpeg_call += f"\" -map [outv] -map [outa] {censored_path}"
