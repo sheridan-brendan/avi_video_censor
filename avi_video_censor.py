@@ -85,7 +85,7 @@ else:
     catfile = f"{video_name}.ffcat"
     f = open(catfile, "w")
     for filename in files :
-        f.write(f"file '{filename}'\n")
+        f.write(f"file '{filename}.{video_ext}'\n")
     f.close()
     subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i {catfile}\
             -c copy {processed_file}"))
