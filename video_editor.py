@@ -8,7 +8,7 @@ from video_indexer_uploader import *
 
 def timestamp_to_seconds(timestamp_str) -> str:
     h, m, s = timestamp_str.split(':')
-    seconds = str(int(h)*3600+int(m)*60+float(s))
+    seconds = int(h)*3600+int(m)*60+float(s)
     return seconds
 
 def merge_intervals(intervals):
@@ -19,6 +19,7 @@ def merge_intervals(intervals):
             merged.append(interval)
         else:
             merged[-1] = (merged[-1][0], max(merged[-1][1], interval[1]))
+    print(merged[:])
     return merged
 
 def find_audio(access_token, account_id, location, video_id) -> list :
@@ -29,9 +30,8 @@ def find_audio(access_token, account_id, location, video_id) -> list :
             if instance['Type'] == "Transcript":
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
-                bad_audio.append((float(start),float(end)))
-    merge_intervals(bad_audio)
-    return bad_audio
+                bad_audio.append((start,end))
+    return merge_intervals(bad_audio)
 
 def bleep_audio(access_token, account_id, location, video_id, video_name,
                 video_ext) -> str :
@@ -61,8 +61,7 @@ def find_bad_chat(textual) -> list:
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
                 bad_chat.append((start,end))
-    merge_intervals(bad_chat)
-    return bad_chat
+    return merge_intervals(bad_chat)
 
 def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
     if(not bad_chat):
@@ -107,8 +106,7 @@ def bin_avi_artifact(visual, binwidth, threshold) -> list:
     bad_bins = []
     for index, row in over_bins.iterrows():
         bad_bins.append((index.left,index.right))
-    merge_intervals(bad_bins)
-    return bad_bins
+    return merge_intervals(bad_bins)
 
 def make_visual_filter(bad_bins) -> str:
     if(not bad_bins):
@@ -136,8 +134,7 @@ def find_breaks(insights, break_phrase) -> list:
                 #print (f"start:{instance['start']}, end:{instance['end']}")
                 breaks.append((timestamp_to_seconds(instance['start']), 
                                timestamp_to_seconds(instance['end'])))
-    merge_intervals(breaks)
-    return breaks
+    return merge_intervals(breaks)
 
 def make_break_filter(breaks) -> str:
     #print(breaks)
