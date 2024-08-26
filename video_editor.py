@@ -53,15 +53,15 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
 
-def find_bad_chat(textual, vid_start, vid_end, buffer=1.0) -> list:
+def find_bad_chat(textual, vid_start, vid_end, cbuffer=1.0) -> list:
     bad_chat = []
     for word in textual['TextualContentModeration']:
         for instance in word['Instances']:
             if instance['Type'] == "Ocr":
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
-                bad_chat.append((max(vid_start,start-buffer),
-                                 min(vid_end,end+buffer)))
+                bad_chat.append((max(vid_start,start-cbuffer),
+                                 min(vid_end,end+cbuffer)))
     return merge_intervals(bad_chat)
 
 def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
@@ -102,12 +102,12 @@ def bin_avi_artifact(visual, binwidth, threshold) -> list:
     #print(binned)
 
     agg_threshold = threshold*binwidth
-    buffer = binwidth/2*fps
+    cbuffer = binwidth/2*fps
     over_bins = binned[binned['Score'] > agg_threshold]
     bad_bins = []
     for index, row in over_bins.iterrows():
-        bad_bins.append((max(min_val,index.left-buffer),
-                         min(max_val,index.right+buffer)))
+        bad_bins.append((max(min_val,index.left-cbuffer),
+                         min(max_val,index.right+cbuffer)))
     return merge_intervals(bad_bins)
 
 def make_visual_filter(bad_bins) -> str:
