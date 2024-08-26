@@ -25,7 +25,7 @@ except ValueError:
 #Visual moderation and chat box values
 #TODO: add command line options
 binwidth = 5.0 #video frames to aggregate(seconds)
-threshold = 0.5 #magic number cutoff normalized to binwidth (0-3.0)
+threshold = 0.6 #magic number cutoff normalized to binwidth (0-3.0)
 blur = 20
 #Amnesia example
 chatx = 1100
@@ -33,6 +33,7 @@ chaty = 250
 chatoffx = 415
 chatoffy = 875
 break_phrase = "TAKING SHORT BREAK, STAY TUNED!"
+#TODO: filter other screen messages
 
 files = []
 video_size=os.path.getsize(video_path)
