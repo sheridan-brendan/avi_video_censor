@@ -6,7 +6,7 @@ import pandas as pd
 from video_indexer_uploader import *
 
 
-def timestamp_to_seconds(timestamp_str) -> str:
+def timestamp_to_seconds(timestamp_str) -> float:
     h, m, s = timestamp_str.split(':')
     seconds = int(h)*3600+int(m)*60+float(s)
     return seconds
@@ -53,14 +53,15 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
 
-def find_bad_chat(textual) -> list:
+def find_bad_chat(textual, vid_start, vid_end, buffer=1.0) -> list:
     bad_chat = []
     for word in textual['TextualContentModeration']:
         for instance in word['Instances']:
             if instance['Type'] == "Ocr":
                 start = timestamp_to_seconds(instance['Start'])
                 end = timestamp_to_seconds(instance['End'])
-                bad_chat.append((start,end))
+                bad_chat.append((max(vid_start,start-buffer),
+                                 min(vid_end,end+buffer)))
     return merge_intervals(bad_chat)
 
 def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
@@ -105,7 +106,8 @@ def bin_avi_artifact(visual, binwidth, threshold) -> list:
     over_bins = binned[binned['Score'] > agg_threshold]
     bad_bins = []
     for index, row in over_bins.iterrows():
-        bad_bins.append((index.left,index.right))
+        bad_bins.append((max(min_val,index.left-buffer),
+                         min(max_val,index.right+buffer)))
     return merge_intervals(bad_bins)
 
 def make_visual_filter(bad_bins) -> str:
@@ -146,19 +148,17 @@ def make_break_filter(breaks) -> str:
     ffmpeg_filter += ";"
     start = 0
     for i in range(len(breaks)):
-        if(breaks[0][0] == 0):
-            continue
         if(start != 0):
             ffmpeg_filter += ";"
-        ffmpeg_filter += f"[v{i}]trim=start={start}:end={breaks[0][0]}"
+        ffmpeg_filter += f"[v{i}]trim=start={start}:end={breaks[i][0]}"
         if(start != 0):
             ffmpeg_filter += f",setpts=PTS-STARTPTS"
         ffmpeg_filter += f"[tv{i}]"
-        ffmpeg_filter += f";[0:a]atrim=start={start}:end={breaks[0][0]}"
+        ffmpeg_filter += f";[0:a]atrim=start={start}:end={breaks[i][0]}"
         if(start != 0):
             ffmpeg_filter += f",asetpts=PTS-STARTPTS"
         ffmpeg_filter += f"[ta{i}]"
-        start = breaks[0][1]
+        start = breaks[i][1]
     ffmpeg_filter += f";[v{len(breaks)}]trim=start={start}"
     ffmpeg_filter += f",setpts=PTS-STARTPTS[tv{len(breaks)}];"
     ffmpeg_filter += f"[0:a]atrim=start={start}"
@@ -183,10 +183,13 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     #pd.set_option('display.max_rows', None)
     #print(bad_bins)
 
-    textual = get_textual_artifact(access_token, account_id, location, video_id) 
-    bad_chat = find_bad_chat(textual)
-
     insights = get_insights(access_token, account_id, location, video_id)
+    textual = get_textual_artifact(access_token, account_id, location, video_id) 
+    
+    vid_start = timestamp_to_seconds(insights['videosRanges'][0]['range']['start'])
+    vid_end = timestamp_to_seconds(insights['videosRanges'][0]['range']['end'])
+    bad_chat = find_bad_chat(textual,vid_start,vid_end)
+
     breaks = find_breaks(insights, break_phrase)
     #breaks = []
 
