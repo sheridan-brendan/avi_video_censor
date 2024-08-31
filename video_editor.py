@@ -36,9 +36,9 @@ def find_audio(access_token, account_id, location, video_id) -> list :
 def bleep_audio(access_token, account_id, location, video_id, video_name,
                 video_ext) -> str :
     bad_audio = find_audio(access_token, account_id, location, video_id)
-    video_path = f"{video_name}.{video_ext}"
+    video_path = f"{video_name}{video_ext}"
     ffmpeg_call = f"ffmpeg -i {video_path} -vcodec copy -af \"volume=enable='"
-    bleeped_path = f"{video_name}-bleeped.{video_ext}"
+    bleeped_path = f"{video_name}-bleeped{video_ext}"
     for start,end in bad_audio :            
         if ffmpeg_call[-1] == ')':
             ffmpeg_call += "+"
@@ -174,8 +174,8 @@ def censor_video(access_token, account_id, location, video_id, video_name,
                  = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20
                  , break_phrase = "TAKING SHORT BREAK, STAY TUNED!") -> str :
    
-    censored_path = f"{video_name}-censored.{video_ext}"
-    video_path = f"{video_name}.{video_ext}" 
+    censored_path = f"{video_name}-censored{video_ext}"
+    video_path = f"{video_name}{video_ext}" 
 
     #TODO: think of ways to make chat blur less brittle
     visual = get_visual_artifact(access_token, account_id, location, video_id)
@@ -191,7 +191,6 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     bad_chat = find_bad_chat(textual,vid_start,vid_end)
 
     breaks = find_breaks(insights, break_phrase)
-    #breaks = []
 
     #TODO: consider -crf (18? def=23) option for quality tuning
     ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} -map_chapters -1 "
@@ -205,5 +204,6 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     ffmpeg_call += f"\" -map [outv] -map [outa] {censored_path}"
     print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
+    
     return f"{video_name}-censored"
 

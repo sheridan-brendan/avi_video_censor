@@ -18,7 +18,7 @@ def get_access_token(subscription_key, account_id, location):
 
 def upload_local_file(access_token, account_id, location, video_path) -> str:
 
-    video_name = os.path.basename(video_path)
+    video_name = video_path.stem
     url = f"https://api.videoindexer.ai/{location}/Accounts/{account_id}/Videos"
 
     privacy='private'
@@ -28,7 +28,7 @@ def upload_local_file(access_token, account_id, location, video_path) -> str:
             'privacy': privacy
     }
 
-    with open(video_path, 'rb') as video_file:
+    with video_path.open('rb') as video_file:
         files = {'file': video_file}
         response = requests.post(url, params=params, files=files)
 
