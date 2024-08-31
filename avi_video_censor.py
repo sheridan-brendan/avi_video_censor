@@ -39,17 +39,17 @@ break_phrase = "TAKING SHORT BREAK, STAY TUNED!"
 #TODO: filter other screen messages
 
 files = []
-video_size=os.path.getsize(video_path)
+video_size=video_path.stat().st_size
 if video_size > 2e9:
     video_len=float(subprocess.check_output(shlex.split(f"ffprobe -v error\
             -show_entries format=duration -of\
-            default=noprint_wrappers=1:nokey=1 {video_path}")))
+            default=noprint_wrappers=1:nokey=1 \"{video_path}\"")))
     approx_bytrate=video_size/video_len
     approx_len=1e9/approx_bytrate
     segment_file=Path(f"{video_name}.csv")
-    subprocess.run(shlex.split(f"ffmpeg -i {video_path} -map 0 -c copy\
+    subprocess.run(shlex.split(f"ffmpeg -i \"{video_path}\" -map 0 -c copy\
             -f segment -segment_time {approx_len} -segment_list\
-            {segment_file} -reset_timestamps 1 {video_name}_%02d{video_ext}"))
+            \"{segment_file}\" -reset_timestamps 1 \"{video_name}_%02d{video_ext}\""))
     with segment_file.open('r') as csvfile:
         csvreader = csv.reader(csvfile)
         for row in csvreader :
@@ -96,8 +96,8 @@ else:
         for path in files :
             cf.write(f"file '{path}'\n")
     
-    subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i {catfile}\
-            -c copy {processed_file}"))
+    subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i \"{catfile}\"\
+            -c copy \"{processed_file}\""))
     #CLEANUP partial files
     for path in files :
         Path.unlink(path)
