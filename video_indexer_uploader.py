@@ -95,9 +95,9 @@ def get_insights(access_token, account_id, location, video_id:str, language:str=
 
     video_result = response.json()
 
-    print(f'Writing json to {video_id}.json')
-    with open(f'{video_id}.json', 'w', encoding='utf-8') as f:
-        json.dump(video_result, f, ensure_ascii=False, indent=4)
+    #print(f'Writing json to {video_id}.json')
+    #with open(f'{video_id}.json', 'w', encoding='utf-8') as f:
+    #    json.dump(video_result, f, ensure_ascii=False, indent=4)
     
     return video_result
 
@@ -115,9 +115,9 @@ def get_textual_artifact(access_token, account_id, location, video_id:str, langu
     artifact_url = response.json()
     artifact_response = requests.get(artifact_url, params=params)
     artifact_response.raise_for_status()
-    print(f'Writing textual content moderation json to {video_id}_text.json')
-    with open(f'{video_id}_text.json', 'w', encoding='utf-8') as f:
-        json.dump(artifact_response.json(), f, ensure_ascii=False, indent=4)
+    #print(f'Writing textual content moderation json to {video_id}_text.json')
+    #with open(f'{video_id}_text.json', 'w', encoding='utf-8') as f:
+    #    json.dump(artifact_response.json(), f, ensure_ascii=False, indent=4)
     
     return artifact_response.json()
 
@@ -135,9 +135,9 @@ def get_visual_artifact(access_token, account_id, location, video_id:str, langua
     artifact_url = response.json()
     artifact_response = requests.get(artifact_url, params=params)
     artifact_response.raise_for_status()
-    print(f'Writing visual content moderation json to {video_id}_visual.json')
-    with open(f'{video_id}_visual.json', 'w', encoding='utf-8') as f:
-        json.dump(artifact_response.json(), f, ensure_ascii=False, indent=4)
+    #print(f'Writing visual content moderation json to {video_id}_visual.json')
+    #with open(f'{video_id}_visual.json', 'w', encoding='utf-8') as f:
+    #    json.dump(artifact_response.json(), f, ensure_ascii=False, indent=4)
     
     return artifact_response.json()
 

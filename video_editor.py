@@ -19,7 +19,7 @@ def merge_intervals(intervals):
             merged.append(interval)
         else:
             merged[-1] = (merged[-1][0], max(merged[-1][1], interval[1]))
-    print(merged[:])
+    print(f"censor intervals: {merged[:]}")
     return merged
 
 def find_audio(access_token, account_id, location, video_id) -> list :
@@ -192,11 +192,6 @@ def censor_video(access_token, account_id, location, video_id, video_name,
 
     breaks = find_breaks(insights, break_phrase)
     #breaks = []
-
-    ##TODO: may need to remove this to not break concat step for files over 2GB
-    #if(bad_bins.empty and not bad_chat and not breaks):
-    #    print("Nothing to do. Skipping reencode.")
-    #    return video_name
 
     #TODO: consider -crf (18? def=23) option for quality tuning
     ffmpeg_call  = f"ffmpeg -i {video_path} -i {image} -map_chapters -1 "
