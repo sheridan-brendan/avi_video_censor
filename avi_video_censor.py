@@ -34,7 +34,7 @@ chatx = 1100
 chaty = 250
 chatoffx = 415
 chatoffy = 875
-break_phrase = "TAKING SHORT BREAK, STAY TUNED!"
+break_phrases = {'TAKING SHORT BREAK, STAY TUNED!', 'WELCOME TO THE STREAM!'}
 #TODO: filter other screen messages
 
 files = []
@@ -75,7 +75,7 @@ for i, path in enumerate(files):
     censored_name = censor_video(access_token, account_id, location, video_id,
                                  bleeped_name, video_ext, image_path, binwidth,
                                  threshold, chatx, chaty, chatoffx, chatoffy,
-                                 blur, break_phrase)
+                                 blur, break_phrases)
     
     #CLEANUP bleep files
     if(bleeped_name != video) :

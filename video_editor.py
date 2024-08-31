@@ -128,10 +128,10 @@ def make_visual_filter(bad_bins) -> str:
     return ffmpeg_filter
 
 
-def find_breaks(insights, break_phrase) -> list:
+def find_breaks(insights, break_phrases) -> list:
     breaks = []
     for ocr in insights['videos'][0]['insights']['ocr'] :
-        if(ocr['text'] == break_phrase) :
+        if(ocr['text'] in break_phrases) :
             for instance in ocr['instances'] :
                 #print (f"start:{instance['start']}, end:{instance['end']}")
                 breaks.append((timestamp_to_seconds(instance['start']), 
@@ -172,7 +172,7 @@ def make_break_filter(breaks) -> str:
 def censor_video(access_token, account_id, location, video_id, video_name,
                  video_ext, image, binwidth = 5.0, threshold = .4, chatx
                  = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20
-                 , break_phrase = "TAKING SHORT BREAK, STAY TUNED!") -> str :
+                 , break_phrases = {}) -> str :
    
     censored_path = f"{video_name}-censored{video_ext}"
     video_path = f"{video_name}{video_ext}" 
@@ -190,7 +190,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     vid_end = timestamp_to_seconds(insights['videosRanges'][0]['range']['end'])
     bad_chat = find_bad_chat(textual,vid_start,vid_end)
 
-    breaks = find_breaks(insights, break_phrase)
+    breaks = find_breaks(insights, break_phrases)
 
     #TODO: consider -crf (18? def=23) option for quality tuning
     ffmpeg_call  = f"ffmpeg -i '{video_path}' -i '{image}' -map_chapters -1 "
