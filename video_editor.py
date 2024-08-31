@@ -37,7 +37,7 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
                 video_ext) -> str :
     bad_audio = find_audio(access_token, account_id, location, video_id)
     video_path = f"{video_name}{video_ext}"
-    ffmpeg_call = f"ffmpeg -i \"{video_path}\" -vcodec copy -af \"volume=enable='"
+    ffmpeg_call = f"ffmpeg -i '{video_path}' -vcodec copy -af \"volume=enable='"
     bleeped_path = f"{video_name}-bleeped{video_ext}"
     for start,end in bad_audio :            
         if ffmpeg_call[-1] == ')':
@@ -48,7 +48,7 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
         print("No bleeping necessary")
         return video_name
 
-    ffmpeg_call += f"':volume=0\" \"{bleeped_path}\""
+    ffmpeg_call += f"':volume=0\" '{bleeped_path}'"
     print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
     return f"{video_name}-bleeped"
@@ -193,7 +193,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     breaks = find_breaks(insights, break_phrase)
 
     #TODO: consider -crf (18? def=23) option for quality tuning
-    ffmpeg_call  = f"ffmpeg -i \"{video_path}\" -i \"{image}\" -map_chapters -1 "
+    ffmpeg_call  = f"ffmpeg -i '{video_path}' -i '{image}' -map_chapters -1 "
     ffmpeg_call += f"-filter_complex \""
     
     ffmpeg_call += make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy,
@@ -201,7 +201,7 @@ def censor_video(access_token, account_id, location, video_id, video_name,
     ffmpeg_call += make_visual_filter(bad_bins)
     ffmpeg_call += make_break_filter(breaks)
 
-    ffmpeg_call += f"\" -map [outv] -map [outa] \"{censored_path}\""
+    ffmpeg_call += f"\" -map [outv] -map [outa] '{censored_path}'"
     print(ffmpeg_call)
     subprocess.run(shlex.split(ffmpeg_call))
     

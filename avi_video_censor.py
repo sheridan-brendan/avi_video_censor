@@ -17,7 +17,6 @@ with account_file.open('r') as af:
 #TODO: doesn't handle filenames with spaces
 try:
     video_path = Path(sys.argv[1])
-    #video_name, video_ext = video_path.rsplit('.',1)
     video_name = video_path.with_suffix('')
     video_ext = video_path.suffix
     image_path = Path(sys.argv[2])
@@ -43,13 +42,13 @@ video_size=video_path.stat().st_size
 if video_size > 2e9:
     video_len=float(subprocess.check_output(shlex.split(f"ffprobe -v error\
             -show_entries format=duration -of\
-            default=noprint_wrappers=1:nokey=1 \"{video_path}\"")))
+            default=noprint_wrappers=1:nokey=1 '{video_path}'")))
     approx_bytrate=video_size/video_len
     approx_len=1e9/approx_bytrate
     segment_file=Path(f"{video_name}.csv")
-    subprocess.run(shlex.split(f"ffmpeg -i \"{video_path}\" -map 0 -c copy\
+    subprocess.run(shlex.split(f"ffmpeg -i '{video_path}' -map 0 -c copy\
             -f segment -segment_time {approx_len} -segment_list\
-            \"{segment_file}\" -reset_timestamps 1 \"{video_name}_%02d{video_ext}\""))
+            '{segment_file}' -reset_timestamps 1 '{video_name}_%02d{video_ext}'"))
     with segment_file.open('r') as csvfile:
         csvreader = csv.reader(csvfile)
         for row in csvreader :
@@ -61,13 +60,12 @@ else :
 print(files[:])
 
 for i, path in enumerate(files):
-    #video,ext = path.rsplit('.',1)
     video = path.with_suffix('')
     ext = path.suffix
     access_token = get_access_token(subscription_key, account_id, location)
-    #video_id = upload_local_file(access_token, account_id, location, path)
+    video_id = upload_local_file(access_token, account_id, location, path)
     #video_id = "07vwapsjoy" #no offensive content example
-    video_id = "21ec4df54e" #offensive content example
+    #video_id = "21ec4df54e" #offensive content example
     #video_id = "b81850331b" #2nd offensive example
 
     access_token = wait_for_index(subscription_key, account_id, location, video_id)
@@ -96,8 +94,8 @@ else:
         for path in files :
             cf.write(f"file '{path}'\n")
     
-    subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i \"{catfile}\"\
-            -c copy \"{processed_file}\""))
+    subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i '{catfile}'\
+            -c copy '{processed_file}'"))
     #CLEANUP partial files
     for path in files :
         Path.unlink(path)
