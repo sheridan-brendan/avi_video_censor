@@ -23,28 +23,20 @@ def upload_local_file(access_token, account_id, location, video_path) -> str:
     privacy='private'
     params = {
             'accessToken': access_token,
-            'pageSize': 1000 #number of video listings to check
-    }
-
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    for result in response.json()['results'] :
-        if (result['name'] == video_name) :
-            video_id = result['id']
-            print(f"video '{video_name}' previously uploaded, id = {video_id}")
-            return video_id
-
-    params = {
-            'accessToken': access_token,
             'name': video_name,
-            'privacy': privacy
+            'privacy': privacy,
+            'preventDuplicates': True
     }
     with video_path.open('rb') as video_file:
         files = {'file': video_file}
         response = requests.post(url, params=params, files=files)
 
-    #TODO: investigate 409 Client Error response here
-    #   possibly related to uploading same video multiple times
+    if(response.status_code == 409 and 
+       response.json()['ErrorType'] == 'ALREADY_EXISTS') :
+        video_id = response.json()['Message'].rsplit("'")[1]
+        print(f"previously uploaded, id = {video_id}")
+        return video_id
+
     response.raise_for_status()
 
     video_id = response.json().get('id')
