@@ -17,16 +17,28 @@ def get_access_token(subscription_key, account_id, location):
 
 def upload_local_file(access_token, account_id, location, video_path) -> str:
 
-    video_name = video_path.stem
-    url = f"https://api.videoindexer.ai/{location}/Accounts/{account_id}/Videos"
+    video_name = video_path.stem+video_path.suffix
 
+    url = f"https://api.videoindexer.ai/{location}/Accounts/{account_id}/Videos"
     privacy='private'
+    params = {
+            'accessToken': access_token,
+            'pageSize': 1000 #number of video listings to check
+    }
+
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    for result in response.json()['results'] :
+        if (result['name'] == video_name) :
+            video_id = result['id']
+            print(f"video '{video_name}' previously uploaded, id = {video_id}")
+            return video_id
+
     params = {
             'accessToken': access_token,
             'name': video_name,
             'privacy': privacy
     }
-
     with video_path.open('rb') as video_file:
         files = {'file': video_file}
         response = requests.post(url, params=params, files=files)

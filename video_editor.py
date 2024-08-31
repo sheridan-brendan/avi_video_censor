@@ -23,6 +23,7 @@ def merge_intervals(intervals):
     return merged
 
 def find_audio(access_token, account_id, location, video_id) -> list :
+    print(f"looking for bad audio intervals...")
     bad_audio = []
     textual = get_textual_artifact(access_token, account_id, location, video_id)
     for word in textual['TextualContentModeration']:
@@ -54,6 +55,7 @@ def bleep_audio(access_token, account_id, location, video_id, video_name,
     return f"{video_name}-bleeped"
 
 def find_bad_chat(textual, vid_start, vid_end, cbuffer=1.0) -> list:
+    print(f"looking for bad chat intervals...")
     bad_chat = []
     for word in textual['TextualContentModeration']:
         for instance in word['Instances']:
@@ -85,6 +87,7 @@ def make_chat_filter(bad_chat, chatx, chaty, chatoffx, chatoffy, blur) -> str:
     return ffmpeg_filter
 
 def bin_avi_artifact(visual, binwidth, threshold) -> list:
+    print(f"looking for bad video intervals...")
     fps = visual['Fps']
     df = pd.json_normalize(visual['Results'])
     df.drop(['Adult.isAdultContent','Adult.isRacyContent','Adult.isGoryContent'], 
@@ -129,6 +132,7 @@ def make_visual_filter(bad_bins) -> str:
 
 
 def find_breaks(insights, break_phrases) -> list:
+    print(f"looking for break card intervals...")
     breaks = []
     for ocr in insights['videos'][0]['insights']['ocr'] :
         if(ocr['text'] in break_phrases) :
