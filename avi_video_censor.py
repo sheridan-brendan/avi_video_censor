@@ -53,7 +53,7 @@ if video_size > 2e9:
         csvreader = csv.reader(csvfile)
         for row in csvreader :
             files.append(Path(row[0]))
-
+    Path.unlink(segment_file)
 else :
     files.append(video_path)
 
@@ -94,9 +94,10 @@ else:
         for path in files :
             cf.write(f"file '{path}'\n")
     
-    subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i '{catfile}'\
+    subprocess.run(shlex.split(f"ffmpeg -f concat -safe 0 -i '{cat_path}'\
             -c copy '{processed_file}'"))
     #CLEANUP partial files
+    Path.unlink(cat_path)
     for path in files :
         Path.unlink(path)
 
