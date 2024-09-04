@@ -6,7 +6,7 @@ import sys
 import time
 
 def get_access_token(subscription_key, account_id, location):
-    url = f"https://api.videoindexer.ai/Auth/trial/Accounts/{account_id}/AccessToken?allowEdit=true"
+    url = f"https://api.videoindexer.ai/Auth/{location}/Accounts/{account_id}/AccessToken?allowEdit=true"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key
     }
