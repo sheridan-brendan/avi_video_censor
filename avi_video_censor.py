@@ -59,17 +59,17 @@ else :
 
 print(files[:])
 
+video_ids = []
+for path in files:
+    access_token = get_access_token(subscription_key, account_id, location)
+    video_id = upload_local_file(access_token, account_id, location, path)
+    video_ids.append(video_id)
+
 for i, path in enumerate(files):
     video = path.with_suffix('')
     ext = path.suffix
-    access_token = get_access_token(subscription_key, account_id, location)
-    video_id = upload_local_file(access_token, account_id, location, path)
-    #video_id = "07vwapsjoy" #no offensive content example
-    #video_id = "21ec4df54e" #offensive content example
-    #video_id = "b81850331b" #2nd offensive example
-
+    video_id = video_ids[i]
     access_token = wait_for_index(subscription_key, account_id, location, video_id)
-    #insights = get_insights(access_token, account_id, location, video_id)
     bleeped_name = bleep_audio(access_token, account_id, location, video_id, video, video_ext)
     #bleeped_name = video
     censored_name = censor_video(access_token, account_id, location, video_id,
