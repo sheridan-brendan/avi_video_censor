@@ -14,7 +14,6 @@ with account_file.open('r') as af:
     subscription_key = lines[1].rstrip()
     location = lines[2].rstrip()
 
-#TODO: doesn't handle filenames with spaces
 try:
     video_path = Path(sys.argv[1])
     video_name = video_path.with_suffix('')
@@ -35,7 +34,6 @@ chaty = 250
 chatoffx = 415
 chatoffy = 875
 break_phrases = {'TAKING SHORT BREAK, STAY TUNED!', 'WELCOME TO THE STREAM!'}
-#TODO: filter other screen messages
 
 files = []
 video_size=video_path.stat().st_size
@@ -60,6 +58,8 @@ else :
 print(files[:])
 
 video_ids = []
+#TODO: consider script-level parallelization here for better resilience to 
+#   resource bottlenecks
 for path in files:
     access_token = get_access_token(subscription_key, account_id, location)
     video_id = upload_local_file(access_token, account_id, location, path)
@@ -77,9 +77,11 @@ for i, path in enumerate(files):
                                  threshold, chatx, chaty, chatoffx, chatoffy,
                                  blur, break_phrases)
     
-    #CLEANUP bleep files
+    #CLEANUP intermediate files
     if(bleeped_name != video) :
         Path.unlink(Path(f"{bleeped_name}{ext}"))
+    if(len(files) > 1) :
+        Path.unlink(path)
 
     files[i] = Path(f"{censored_name}{video_ext}")
     print(f"Censored video: {files[i]}")
