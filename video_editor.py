@@ -174,7 +174,7 @@ def make_break_filter(breaks) -> str:
 
 
 def censor_video(access_token, account_id, location, video_id, video_name,
-                 video_ext, image, binwidth = 5.0, threshold = .4, chatx
+                 video_ext, image, binwidth = 5.0, threshold = 1.0, chatx
                  = 1100, chaty = 250, chatoffx = 415, chatoffy = 875, blur = 20
                  , break_phrases = {}) -> str :
    
