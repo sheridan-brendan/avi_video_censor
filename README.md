@@ -2,7 +2,7 @@
 This is a bare-bones prototype for automated video censoring of cursing/graphic content/dead air/ect. using azure video indexer insights. The motivating use case is censoring Twitch gameplay vods for upload to youtube.
 
 ## Requirements
-* `python3` - see requirements.txt for python libraries and versions
+* `python3` - see [requirements](./requirements.txt) for python libraries and versions
 * `ffmpeg` - installed and available from call PATH
 * `Azure AI Video Indexer` - account with API subscription, see [Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-video-indexer/video-indexer-use-apis) for signup instructions
 
