@@ -35,8 +35,7 @@ chatoffx = 415
 chatoffy = 875
 #TODO: Would fuzzy match be better? OCR sometimes has typos
 break_phrases = {'TAKING SHORT BREAK, STAY TUNED!', 'WELCOME TO THE STREAM!',
-                 'Follow me on social media for stream updates!',
-                 '@PoquitoPotatoTTV'}
+                 'Follow me on social media for stream updates!'}
 
 files = []
 video_size=video_path.stat().st_size
